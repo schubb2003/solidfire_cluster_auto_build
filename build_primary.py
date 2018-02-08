@@ -1,9 +1,8 @@
 #!/usr/local/bin/python
-# Author: Scott Chubb scott.chubb@netapp.com
+# Author: Scott Chubb scott.chubb@netapp.com, Justin Hover justin.hover@netapp.com
 # Date: 8-Feb-2018
 # Version 2.4
-# Notes: This script has been written for python 2.7.14 and 3.6.3
-# on 2.7 you must install ipaddress via pip
+# Notes: This script has been written for python 3.4 and above
 # Script is currently written to read a csv called csvfile for information
 # It then parses and builds the node information from said csv
 # Format should be as below
