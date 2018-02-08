@@ -1,14 +1,14 @@
 #!/usr/local/bin/python
-# Author: Scott Chubb scott.chubb@netapp.com
+# Author: Scott Chubb scott.chubb@netapp.com, Justin Hover justin.hover@netapp.com
 # Date: 8-Jan-2018
-# Version 1.2
+# Version 1.3
 # Notes: This script has been written for python 2.7.14 and 3.6.3
 # on 2.7 you must install requests and ipaddress
 # PEP8 compliance reviewed 7-Dec-2017
 # Script is currently written to read a csv called cvfile for node information
 # It then parses and builds the node information from said csv
 # Format should be as below
-# DhcpIP,1Gb_IP,1G_mask,1g_gateway,1G_DNSservers,10Gb_IP,10G_mask,10Gb_gateway,10G_MTU,NodeName
+# DhcpIP,1Gb_IP,1G_mask,1g_gateway,1G_DNSservers,10Gb_IP,10G_mask,10G_MTU,NodeName
 # Script expects arguments for cluster build information
 # Args are as follows:
 # Clustername,MVIP,SVIP,cluster admin, cluster admin password
@@ -19,6 +19,7 @@ import os
 import requests
 import csv
 import ipaddress
+import time
 from platform import system as system_name
 from subprocess import call
 from solidfire.factory import ElementFactory
@@ -26,6 +27,7 @@ from solidfire.models import *
 
 # Function used to determine if the OS is Windows or Unix for testPing
 def testIP(host):
+        loop_count = 0
         if system_name().lower() == "windows":
                 response = os.system("ping -n 2 " + host)
         else:
@@ -34,6 +36,10 @@ def testIP(host):
         while response != 0:
                 print("retrying...")
                 time.sleep(10)
+                loop_count += 1
+                print(loop_count)
+                if loop_count > 10:
+                    sys.exit("Unable to ping node, script has exited")
 
 # If not using CSV file, uncomment lines and change length check to 16
 # and swap commenting on Insufficient arguments line
@@ -50,31 +56,21 @@ else:
     # Gateway1G = sys.argv[4]
     # StaticIP10G = sys.argv[5]
     # Netmask10G = sys.argv[6]
-    # Gateway10G = sys.argv[7]
-    # MTU10G = sys.argv[8]
-    # NameServers1G = sys.argv[9]
-    # NodeName = sys.argv[10]
+    # MTU10G = sys.argv[7]
+    # NameServers1G = sys.argv[8]
+    # NodeName = sys.argv[9]
     ClusterName = sys.argv[1]
     mvipIP = sys.argv[2]
     svipIP = sys.argv[3]
     SFUser = sys.argv[4]
     SFUserPass = sys.argv[5]
 
-# Web/REST auth credentials build authentication
-auth = ("fake:fake")
-encodeKey = base64.b64encode(auth.encode('utf-8'))
-basicAuth = bytes.decode(encodeKey)
+nodeArray = []
 
 try:
-    requests.request("GET", url)
-    if response.status_code == 200:
-        print("Connection is valid")
-    elif response.status_code == 401:
-        print("Authorization error, check username and password")
-    elif response.status_code == 500:
-        print("Invalid JSON data submitted")
-    else:
-        print("Error code:\t %s" % response.status_code)
+    
+    
+    # Read input file, currently set as CSV for build params
     with open("csvfile.csv", "rb") as buildFile:
         reader = csv.reader(buildFile, delimiter=",")
         for i, line in enumerate(reader):
@@ -85,13 +81,10 @@ try:
             NameServer1G = line[4]
             StaticIP10G = line[5]
             Netmask10G = line[6]
-            Gateway10G = line[7]
-            MTU10G = line[8]
-            NodeName = line[9]
-            count_nodes += 1
+            NodeName = line[7]
 
-            # Verify submissions are valid IP addresses
-            # Warning: this may break on Python versions above 3.x
+    # Verify submissions are valid IP addresses
+    # Warning: this may break on Python versions above 3.x
             if sys.version_info.major == 2:
                 ipaddress.ip_address(bytearray(DhcpIP))
                 ipaddress.ip_address(bytearray(StaticIP1G))
@@ -100,8 +93,7 @@ try:
                 ipaddress.ip_address(bytearray(NameServer1G))
                 ipaddress.ip_address(bytearray(StaticIP10G))
                 ipaddress.ip_address(bytearray(Netmask10G))
-                ipaddress.ip_address(bytearray(Gateway10G))
-            else:
+            elif sys.version_info.major >= 3:
                 ipaddress.ip_address(DhcpIP)
                 ipaddress.ip_address(StaticIP1G)
                 ipaddress.ip_address(Netmask1G)
@@ -109,15 +101,14 @@ try:
                 ipaddress.ip_address(NameServer1G)
                 ipaddress.ip_address(StaticIP10G)
                 ipaddress.ip_address(Netmask10G)
-                ipaddress.ip_address(Gateway10G)
+            else:
+                sys.exit("Unsupported Python version")
 
-            # Vars used later
-            y = 1 			# Used to compare node count to bootstrap list
+    # Vars used later
             buildMipi = "" 	# Used in cluster build while loop
             buildSipi = "" 	# Used in cluster build while loop
-            nurl = "https://" + DhcpIP + ":442/json-rpc/9.0"  # Node based url
 
-            # Print output of submitted information
+    # Print output of submitted information
             print("Configuring cluster: \t" + ClusterName +
                   "\nConfigure via node: \t" + NodeName +
                   "\nConfigure via DHCP: \t" + DhcpIP +
@@ -125,133 +116,76 @@ try:
                   "\nConfigure 1G netmask: \t" + Netmask1G +
                   "\nConfigure 1G gateway: \t" + Gateway1G +
                   "\nConfigure 10G IP: \t" + StaticIP10G +
-                  "\nConfigure 10G netmask: \t" + Netmask10G +
-                  "\nConfigure 10G gateway: \t" + Gateway10G)
+                  "\nConfigure 10G netmask: \t" + Netmask10G,
+                  "\n------------------------------------")
 
-            # Ping the node DHCP address
+    # Ping the node DHCP address
             testIP(DhcpIP)
 
-            sfe = ElementFactory.create(DhcpIP, "fake", "fake")
+            sfe = ElementFactory.create(DhcpIP + ":442", "fake", "fake", print_ascii_art="False")
+            if not sfe:
+                # Web/REST auth credentials build authentication
+                auth = ("fake:fake")
+                encodeKey = base64.b64encode(auth.encode('utf-8'))
+                basicAuth = bytes.decode(encodeKey)
+                
+                # Web/REST check for status code
+                url = "https://" + DhcpIP + ":442"  # Node based url
+                requests.request("GET", url, verify_ssl=False)
+                sys.exit("Unable to connect to node:\t %s" % response.status_code)
 
-            # Build the 1G networking
-            network1GCfg = "{\n\t\"method\": \"SetNetworkConfig\"," \
-                           "\n\t\" params\": { " \
-                           "\n\t\t\"network\": {\"Bond1G\" :{" \
-                           "\n\t\t\t\"address\": \"" + StaticIP1G + "\"," \
-                           "\n\t\t\t\"netmask\": \"" + Netmask1G + "\"," \
-                           "\n\t\t\t\"gateway\": \"" + Gateway1G + "\"," \
-                           "\n\t\t\t\"nameservers\": \"" + NameServers1G + "\"" \
-                           "\n    \t\t\t}\n\t\t}\n},\n    \"id\": 1\n}"
+    # Apply configuration to node: 1G, 10G, cluster
+            sfe.set_network_config(network=Network(bond1_g=NetworkConfig(address=StaticIP1G,
+                                                                         netmask=Netmask1G,
+                                                                         gateway=Gateway1G,
+                                                                         dns_nameservers=NameServer1G)))
+            sfe.set_network_config(network=Network(bond10_g=NetworkConfig(address=StaticIP10G,
+                                                                          netmask=Netmask10G,
+                                                                          mtu=MTU10G,
+                                                                          bond_mode="LACP")))
+            sfe.set_cluster_config(cluster=ClusterConfig(name=NodeName, cluster=ClusterName))
 
-            # Build the 10G networking
-            network10GCfg = "{\n\t\"method\": \"SetNetworkConfig\"," \
-                            "\n\t\"params\": " \
-                            "{\n\t\t\"network\": {\"Bond10G\" :{" \
-                            "\n\t\t\t\"address\": \"" + StaticIP10G + "\"," \
-                            "\n\t\t\t\"netmask\": \"" + Netmask10G + "\"," \
-                            "\n\t\t\t\"gateway\": \"" + Gateway10G + "\"," \
-                            "\n\t\t\t\"mtu\": \"" + MTU10G + "\"" \
-                            "\n    \t\t\t}\n\t\t}\n},\n    \"id\": 1\n}"
+    # Place 10G IP in array for later cluster creation
+            nodeArray.append(StaticIP10G)
 
-            # Build the node cluster config
-            nodeClusterCfg = "{\n\t\"method\": \"SetClusterConfig\"," \
-                             "\n\t\"params\": {\n\t\t\"cluster\" :{" \
-                             "\n\t\t\t\"cipi\": \"Bond10G\"," \
-                             "\n\t\t\t\"name\": \"" + NodeName + "\"," \
-                             "\n\t\t\t\"cluster\": \"" + ClusterName + "\"," \
-                             "\n\t\t\t\"mipi\": \"Bond1G\"," \
-                             "\n\t\t\t\"sipi\": \"Bond10G\"," \
-                             "\n    \t\t\t}\n\t\t},\n   \"id\": 1\n}"
-
-            headers = {
-                       'content-type': "application/json",
-                       'authorization': "Basic " + basicAuth
-                       }
-
-            response10G = requests.request("POST",
-                                           nurl,
-                                           data=network10GCfg,
-                                           headers=headers,
-                                           verify=False)
-
-            testPing(StaticIP10G)
-
-            response1G = requests.request("POST",
-                                          nurl,
-                                          data=network1GCfg,
-                                          headers=headers,
-                                          verify=False)
-
-            testPing(StaticIP1G)
-
-            responsenodeClusterCfg = requests.request("POST",
-                                                      nurl,
-                                                      data=nodeClusterCfg,
-                                                      headers=headers,
-                                                      verify=False)
-
-            netPortCfg = "{\n\t\"method\": \"GetClusterConfig\"," \
-                         "\n    \"params\": { },\n    \"id\": 1\n}"
             while buildMipi != 'Bond1G' and buildSipi != 'Bond10G':
-                responseBuild = requests.request("POST",
-                                                 nurl,
-                                                 data=netPortCfg,
-                                                 headers=headers,
-                                                 verify=False)
-                buildMipi = (data['result']['cluster']['mipi'])
-                buildSipi = (data['result']['cluster']['sipi'])
+                get_cluster_config_result = sfe.get_cluster_config()
+                buildMipi = get_cluster_config_result.cluster.mipi
+                buildSipi = get_cluster_config_result.cluster.sipi
 
 # Cluster section
 finally:
-    murl = "https://" + mvipIP + ":443/json-rpc/9.0"    # Mvip based calls
 
-    # Update here to add SFE connection
-    sfe = ElementFactory.create(DhcpIP + ":442", SFUser, SFUserPass)
-    strap = sfe.get_bootstrap_config()
-
-    while len(strap.nodes) < count_nodes:
-        sleep(5)
-    nodeArray = str(strap.nodes)
+    sfe = ElementFactory.create(StaticIP1G,
+                                SFUser,
+                                SFUserPass,
+                                print_ascii_art="False")
 
     # Build the cluster config
-    clusterBuild = "{\n\t\"method\": \"SetClusterConfig\"," \
-                   "\n\t\"params\": {\n\t\t\"cluster\" :{" \
-                   "\n\t\t\t\"acceptEula\": True," \
-                   "\n\t\t\t\"mvip\": \"" + mvipIP + "\"," \
-                   "\n\t\t\t\"svip\": \"" + svipIP + "\"," \
-                   "\n\t\t\t\"rep_Count\": \"2\"," \
-                   "\n\t\t\t\"username\": \"" + SFUser + "\"," \
-                   "\n\t\t\t\"password\": \"" + SFUserPass + "\"," \
-                   "\n\t\t\t\"nodes\": \"" + nodeArray + "\"," \
-                   "\n    \t\t\t}\n\t\t},\n   \"id\": 1\n}"
 
-    responseClusterBuild = requests.request("POST",
-                                            murl,
-                                            data=clusterBuild,
-                                            headers=headers,
-                                            verify=False)
+    sfe.create_cluster(mvip=mvipIP,
+                       svip=svipIP,
+                       username=SFUser,
+                       password=SFUserPass,
+                       nodes=nodeArray,
+                       rep_count=2,
+                       accept_eula="True")
 
-    # Ping MVIP and SVIP before proceeding
-    testPing(mvipIP)
+    print "Creating cluster " + ClusterName
+    time.sleep(300)
 
-    testPing(svipIP)
+    # Ping MVIP before proceeding
+    testIP(mvipIP)
 
     # Build array of available drives and add them
-    driveArray = [test]
-    x = 0
-    sfe = ElementFactory.create(mvipIP, SFUser, SFUserPass)
-    while len(driveArray) != 0:
-        if driveArray[0] = "test":
-            driveArray.remove([0])
-            list_drives = sfe.list_drives()
-            for disk in list_drives.drives:
-                if disk.status == "available":
-                    driveArray.append(disk.drive_id)
-        sfe.add_drives(driveArray)
-        x += 1
-        if x == 10:
-            sys.exit("Loop has exceed 10 tries, exiting")
-        sleep(30)
+    driveArray = []
+    sfe = ElementFactory.create(mvipIP, SFUser, SFUserPass, print_ascii_art="False")
+    list_drives = sfe.list_drives()
+    for disk in list_drives.drives:
+        if disk.status == "available":
+            driveArray.append(disk.drive_id)
+    sfe.add_drives(driveArray)
+    print "Adding all available drives..."
+    time.sleep(60)
 
-except requests.exceptions.SSLError:
-    sys.exit("SSL certificate error encountered")
+    print "Cluster Configuration Complete"
