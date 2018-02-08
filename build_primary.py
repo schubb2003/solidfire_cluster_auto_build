@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # Author: Scott Chubb scott.chubb@netapp.com
 # Date: 6-Dec-2017
-# Version 1.0
+# Version 1.1
 # Notes: This script has been written for python 2.7.14 and 3.6.3
 # on 2.7 you must install requests and ipaddress
 # PEP8 compliance reviewed 7-Dec-2017
@@ -132,7 +132,7 @@ try:
     # Ping the node DHCP address
     testIP(DhcpIP)
 
-    # sfe = ElementFactory.create(DhcpIP, "fake", "fake")
+    sfe = ElementFactory.create(DhcpIP, "fake", "fake")
 
     # Build the 1G networking
     network1GCfg = "{\n\t\"method\": \"SetNetworkConfig\"," \
@@ -190,10 +190,16 @@ try:
                                               headers=headers,
                                               verify=False)
 
+    netPortCfg = "{\n\t\"method\": \"GetClusterConfig\"," \
+    "\n    \"params\": { },\n    \"id\": 1\n}"
     while buildMipi != 'Bond1G' and buildSipi != 'Bond10G':
-        get_cluster_config_result = sfe.get_cluster_config()
-        buildMipi = get_cluster_config_result.cluster.mipi
-        buildSipi = get_cluster_config_result.cluster.sipi
+        responseBuild = requests.request("POST",
+                                         nurl,
+                                         data=netPortCfg,
+                                         headers=headers,
+                                         verify=False)
+        buildMipi = (data['result']['cluster']['mipi'])
+        buildSipi =( data['result']['cluster']['sipi'])
 
 # Cluster section
 finally:
