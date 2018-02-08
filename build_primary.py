@@ -22,7 +22,7 @@ import argparse
 from platform import system as system_name
 from subprocess import call
 from solidfire.factory import ElementFactory
-from solidfire.models import *
+from solidfire.models import Drive
 
 # Function to build array of available drives and add them
 def drive_add():
