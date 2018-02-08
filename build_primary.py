@@ -1,5 +1,8 @@
 #!/usr/local/bin/python
 # Author: Scott Chubb scott.chubb@netapp.com, Justin Hover justin.hover@netapp.com
+# No warranty is provided, use at your own risk
+# Updates are uploaded at modification time, testing may not have occurred
+# Never run scripts in production without testing in non-prod prior
 # Date: 8-Feb-2018
 # Version 2.4
 # Notes: This script has been written for python 3.4 and above
