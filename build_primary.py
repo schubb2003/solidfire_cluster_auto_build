@@ -1,8 +1,9 @@
 #!/usr/local/bin/python
-# Author: Scott Chubb scott.chubb@netapp.com, Justin Hover justin.hover@netapp.com
+# Author: Scott Chubb scott.chubb@netapp.com
 # Date: 8-Feb-2018
 # Version 2.4
-# Notes: This script has been written for python 3.4 and above
+# Notes: This script has been written for python 2.7.14 and 3.6.3
+# on 2.7 you must install ipaddress via pip
 # Script is currently written to read a csv called csvfile for information
 # It then parses and builds the node information from said csv
 # Format should be as below
@@ -11,7 +12,7 @@
 # Script expects arguments for cluster build information
 # Args are as follows:
 # Clustername,MVIP,SVIP,cluster admin, cluster admin password (change DHCP IPs) (converge managment IPs)
-# Usage: python build.py -cn sfdemo1 -m 192.168.0.101 -s 192.168.0.130 -u admin -p Netapp1! (-d | -nd) (-c | -nc)
+# Usage: python build.py -cn sfdemo1 -mv 192.168.0.101 -sv 192.168.0.130 -un admin -pw Netapp1! (-ud | -nd) (-cm | -nc)
 
 import sys
 import os
