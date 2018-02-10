@@ -256,7 +256,7 @@ finally:
     sfe3.timeout(300)
     
     # rep_count=2 is the code for double helix
-    # IF triple helix is implemented, adjust this to three
+    # IF triple helix is an option, adjust this to three
     # for triple write protection
     sfe3.create_cluster(mvip=mvip_ip,
                         svip=svip_ip,
