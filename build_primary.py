@@ -250,14 +250,14 @@ finally:
     time.sleep(30)
     sfe3 = ElementFactory.create(staticIP1G,
                                  sf_user,
-                                 sf_user_pass)
+                                 sf_user_pass,
+                                 timeout=300)
 
     # Build the cluster config
-    sfe3.timeout(300)
     
     # rep_count=2 is the code for double helix
-    # IF triple helix is ever an option, adjust this to three
-    # for triple write protection
+    # IF triple helix is ever implemented, adjust this to three
+    # for triple write protection, quad helix set to 4, etc
     sfe3.create_cluster(mvip=mvip_ip,
                         svip=svip_ip,
                         username=sf_user,
