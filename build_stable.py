@@ -70,16 +70,6 @@ basicAuth = bytes.decode(encodeKey)
 
 try:
     nodeArray = []
-    url = "https://10.7.1.1:442"
-    response = requests.request("GET", url, verify=False)
-    if response.status_code == 200:
-        print("Connection is valid")
-    elif response.status_code == 401:
-        print("Authorization error, check username and password")
-    elif response.status_code == 500:
-        print("Invalid JSON data submitted")
-    else:
-        print("Error code:\t %s" % response.status_code)
     with open("csvfile.csv", "rb") as buildFile:
         reader = csv.reader(buildFile, delimiter=",")
         for i, line in enumerate(reader):
