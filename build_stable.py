@@ -2,6 +2,7 @@
 # Author: Scott Chubb scott.chubb@netapp.com Justin Hover justin.hover@netapp.com
 # Date: 22-Jan-2018
 # Version 2.1
+# https://www.github.com/schubb2003
 # Notes: This script has been written for python 2.7.14 and 3.6.3
 # on 2.7 you must install requests and ipaddress
 # PEP8 compliance reviewed 7-Dec-2017
@@ -12,7 +13,7 @@
 # Script expects arguments for cluster build information
 # Args are as follows:
 # Clustername,MVIP,SVIP,cluster admin, cluster admin password
-# Usage: python build_2.py sfdemo1 192.168.0.101 192.168.0.130 admin Netapp1!
+# Usage: python build_stable.py sfdemo1 192.168.0.101 192.168.0.130 admin Netapp1!
 import sys
 import base64
 import os
@@ -150,7 +151,7 @@ finally:
 
     # Build array of available drives and add them
     driveArray = []
-    sfe = ElementFactory.create("10.7.1.10", "admin", "solidfire", print_ascii_art="False")
+    sfe = ElementFactory.create(mvipIP, SFUser, SFPass, print_ascii_art="False")
     list_drives = sfe.list_drives()
     for disk in list_drives.drives:
         if disk.status == "available":
