@@ -27,75 +27,6 @@ from subprocess import call
 from solidfire.factory import ElementFactory
 from solidfire.models import Drive
 
-# Function to build array of available drives and add them
-def drive_add():
-    drive_array = []
-    check_array = []
-    sfe_drive_add = ElementFactory.create(mvip_ip,
-                                         sf_user,
-                                         sf_user_pass,
-                                         print_ascii_art=False)
-    list_drives = sfe_drive_add.list_drives()
-    for disk in list_drives.drives:
-        if disk.status == "available":
-            drive_array.append(disk.drive_id)
-    sfe_drive_add.add_drives(drive_array)
-    sys.stdout.write("Sleep 300 seconds while adding all available drives...")
-    time.sleep(300)
-    
-    check_drives = sfe_drive_add.list_drives()
-    for disk in check_drives.drives:
-        if disk.status != "available":
-            check_array.append(disk.drive_id)
-            if len(check_array) > 0:
-                sys.stdout.write("Error assigning drives %s, " % check_array + \
-                                 "please double check drive status")
-
-# Function used to determine if the OS is Windows or Unix and test ping
-def test_ip(host):
-        if system_name().lower() == "windows":
-                response = os.system("ping -n 2 " + host)
-        else:
-                response = os.system("ping -c 2 " + host)
-        sys.stdout.write(response)
-        while response != 0:
-                sys.stdout.write("retrying...")
-                time.sleep(10)
-                ping_loop_count += 1
-                if ping_loop_count >= 10:
-                    sys.exit("PING loop count exceeds 10 tries, "
-                             "script exiting, build incomplete")
-
-# Function to determine if input is a valid IP address, this works for IPv4 and IPv6 
-# This script explicity calls out Python v2 and above as valid and below v2 as unsupported
-# Changes to Python in the future could result in the script needing updated to address that                   
-def verify_ip(addr):
-    if sys.version_info[0] == 2:
-        try:
-            ipaddress.ip_address(bytearray(addr))
-        except ValueError:
-            sys.exit("Input does not evaluate to an IP address for node "
-                     "%s, submitted IP is %s" % (node_name,addr))
-    elif sys.version_info[0] > 2:
-        try:
-            ipaddress.ip_address(addr)
-        except ValueError:
-            sys.exit("Input does not evaluate to an IP address for node "
-                     "%s, submitted IP is %s" % (node_name,addr))
-    elif sys.version_info[0] < 2:
-        sys.exit("Unsupported version of Python detected, script will exit")
-
-# Function to wait until mipi and sipi are on the proper networks
-def ipi_check():
-    get_cluster_config_result = sfe.get_cluster_config()
-    build_mipi = get_cluster_config_result.cluster.mipi
-    build_sipi = get_cluster_config_result.cluster.sipi
-    net_int_loop_check += 1
-    if net_int_loop_check > 10:
-        sys.exit("MVIP/SVIP verification exceeded 10 tries, "
-                 " on host %s. script has exited, " % node_name + \
-                 "build state incomplete")
-                                 
 parser = argparse.ArgumentParser()
 parser.add_argument('-cn', type=str,
                     required=True,
@@ -149,13 +80,85 @@ sf_user_pass = args.pw
 update_dhcp_addr = args.ud
 network_converge = args.cm
 
+
 # Vars used later
 build_mipi = ""
 build_sipi = ""
 node_count = 0
-node_count_compare = 0
-net_int_loop_check = 0
 node_array = []
+
+
+# Function to build array of available drives and add them
+def drive_add():
+    drive_array = []
+    check_array = []
+    sfe_drive_add = ElementFactory.create(mvip_ip,
+                                         sf_user,
+                                         sf_user_pass,
+                                         print_ascii_art=False)
+    list_drives = sfe_drive_add.list_drives()
+    for disk in list_drives.drives:
+        if disk.status == "available":
+            drive_array.append(disk.drive_id)
+    sfe_drive_add.add_drives(drive_array)
+    sys.stdout.write("Sleep 300 seconds while adding all available drives...")
+    time.sleep(300)
+    
+    check_drives = sfe_drive_add.list_drives()
+    for disk in check_drives.drives:
+        if disk.status != "available":
+            check_array.append(disk.drive_id)
+            if len(check_array) > 0:
+                sys.stdout.write("Error assigning drives %s, " % check_array + \
+                                 "please double check drive status")
+
+# Function used to determine if the OS is Windows or Unix and test ping
+def test_ip(host):
+    ping_loop_count = 0
+    if system_name().lower() == "windows":
+            response = os.system("ping -n 2 " + host)
+    else:
+            response = os.system("ping -c 2 " + host)
+    sys.stdout.write(response)
+    while response != 0:
+            sys.stdout.write("retrying...")
+            time.sleep(10)
+            ping_loop_count += 1
+            if ping_loop_count >= 10:
+                sys.exit("PING loop count exceeds 10 tries, "
+                         "script exiting, build incomplete")
+
+# Function to determine if input is a valid IP address, this works for IPv4 and IPv6 
+# This script explicity calls out Python v2 and above as valid and below v2 as unsupported
+# Changes to Python in the future could result in the script needing updated to address that                   
+def verify_ip(addr):
+    if sys.version_info[0] == 2:
+        try:
+            ipaddress.ip_address(bytearray(addr))
+        except ValueError:
+            sys.exit("Input does not evaluate to an IP address for node "
+                     "%s, submitted IP is %s" % (nodeName,addr))
+    elif sys.version_info[0] > 2:
+        try:
+            ipaddress.ip_address(addr)
+        except ValueError:
+            sys.exit("Input does not evaluate to an IP address for node "
+                     "%s, submitted IP is %s" % (nodeName,addr))
+    elif sys.version_info[0] < 2:
+        sys.exit("Unsupported version of Python detected, script will exit")
+
+# Function to wait until mipi and sipi are on the proper networks
+def ipi_check():
+    net_int_loop_check = 0
+    get_cluster_config_result = sfe.get_cluster_config()
+    build_mipi = get_cluster_config_result.cluster.mipi
+    build_sipi = get_cluster_config_result.cluster.sipi
+    net_int_loop_check += 1
+    if net_int_loop_check > 10:
+        sys.exit("MVIP/SVIP verification exceeded 10 tries, "
+                 " on host %s. script has exited, " % nodeName + \
+                 "build state incomplete")
+
 
 try:
     with open("csvfile.csv", "r") as buildFile:
@@ -273,6 +276,8 @@ finally:
     cluster_state = sfe3.get_cluster_state
     # Check cluster nodes equal the expected number
     # Generate output if there is any mismatch detected and note the mismatch
+    node_count = 0
+    node_count_compare = 0
     for node in cluster_state.nodes:
         if node.result.state == "Active":
             node_count_compare += 1
@@ -282,20 +287,20 @@ finally:
                  "\nNode count should be {}"\
                  "\nNode count returned from cluster is {}"
                  "\nScript has exited, build is "
-                 "partially completed".format(node_count, node_count_compare)
+                 "partially completed".format(node_count, node_count_compare))
     elif node_count_compare > node_count:
         drive_add()
         sys.exit("Node count greater than expected"
                  "\nNode count should be {}"
                  "\nNode count returned from cluster is {}"
                  "\nScript has exited, build "
-                 "state unknown").format(node_count, node_count_compare)
+                 "state unknown".format(node_count, node_count_compare))
     elif node_count_compare == 0:
         sys.exit("Node count mismatch detected, node count is zero"
                  "\nNode count should be {}"
                  "\nNode count returned from cluster is {}"
                  "\nScript has exited, build "
-                 "does not appear complete").format(node_count, node_count_compare)
+                 "does not appear complete".format(node_count, node_count_compare))
 
     else:
         drive_add()
