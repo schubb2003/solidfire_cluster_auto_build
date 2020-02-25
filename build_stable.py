@@ -24,7 +24,7 @@ import time
 from platform import system as system_name
 from subprocess import call
 from solidfire.factory import ElementFactory
-from solidfire.models import *
+from solidfire.models import Drive
 
 
 # Function used to determine if the OS is Windows or Unix for testPing
@@ -70,6 +70,7 @@ basicAuth = bytes.decode(encodeKey)
 
 
 try:
+    y = 0
     nodeArray = []
     with open("csvfile.csv", "rb") as buildFile:
         reader = csv.reader(buildFile, delimiter=",")
@@ -143,7 +144,7 @@ finally:
     # Build the cluster config
 
     sfe.create_cluster(mvip=mvipIP, svip=svipIP, username=SFUser, password=SFUserPass, nodes=nodeArray, rep_count=2, accept_eula="true")
-    print "Creating cluster " + ClusterName
+    print("Creating cluster: {} ".format(ClusterName))
     time.sleep(300)
     
     # Ping MVIP before proceeding
@@ -151,15 +152,15 @@ finally:
 
     # Build array of available drives and add them
     driveArray = []
-    sfe = ElementFactory.create(mvipIP, SFUser, SFPass, print_ascii_art="False")
+    sfe = ElementFactory.create(mvipIP, SFUser, SFUserPass, print_ascii_art="False")
     list_drives = sfe.list_drives()
     for disk in list_drives.drives:
         if disk.status == "available":
             driveArray.append(disk.drive_id)
     sfe.add_drives(driveArray)
-    print "Adding all available drives..."
+    print("Adding all available drives...")
     time.sleep(60)
 
 #except requests.exceptions.SSLError:
     #print("SSL certificate error")
-    print "Cluster Configuration Complete"
+    print("Cluster Configuration Complete")

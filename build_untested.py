@@ -162,7 +162,7 @@ try:
         reader = csv.reader(buildFile, delimiter=",")
         for i, line in enumerate(reader):
             node_count += 1
-            if dhcp == True:
+            if dhcp is True:
                 dhcpIP = line[0]
                 staticIP1G = line[1]
                 netmask1G = line[2]
@@ -191,7 +191,7 @@ try:
                 verify_ip(staticIP10G)
                 verify_ip(netmask10G)
 
-            if dhcp == True:
+            if dhcp is True:
                 sys.stdout.write("Configuring cluster: \t" + cluster_name +
                       "\nConfigure via node: \t" + nodeName +
                       "\nConfigure via DHCP: \t" + dhcpIP +
@@ -220,7 +220,7 @@ try:
         # Apply configuration to node: 1G, 10G, cluster
         # comment below line out if 1GbE IPs are static configured prior
         # If the IP is set, but DNS servers need applied remove all line except dns_namservers=nameServer1G
-            if dhcp == True and converge_mgmt == False:
+            if dhcp is True and converge_mgmt is False:
                 sfe.set_network_config(network=Network(bond1_g=NetworkConfig(address=staticIP1G,
                                                                              netmask=netmask1G,
                                                                              gateway=gateway1G,
@@ -238,7 +238,7 @@ try:
 
         # Place 10G IP in array for later cluster creation
             node_array.append(staticIP10G)
-            if converge_mgmt == True:
+            if converge_mgmt is True:
                 while build_mipi != 'Bond1G' and build_sipi != 'Bond10G':
                     ipi_check()
             else:
@@ -279,20 +279,23 @@ finally:
     if node_count_compare < node_count and node_count_compare > 0:
         drive_add()
         sys.exit("Node count less than expected"
-                 "\nNode count should be %s" % node_count + \
-                 "\nNode count returned from cluster is %s" % node_count_compare + \
-                 "\nScript has exited, build is partially completed")
+                 "\nNode count should be {}"\
+                 "\nNode count returned from cluster is {}"
+                 "\nScript has exited, build is "
+                 "partially completed".format(node_count, node_count_compare)
     elif node_count_compare > node_count:
         drive_add()
         sys.exit("Node count greater than expected"
-                 "\nNode count should be %s" % node_count + \
-                 "\nNode count returned from cluster is %s" % node_count_compare + \
-                 "\nScript has exited, build state unknown")
+                 "\nNode count should be {}"
+                 "\nNode count returned from cluster is {}"
+                 "\nScript has exited, build "
+                 "state unknown").format(node_count, node_count_compare)
     elif node_count_compare == 0:
         sys.exit("Node count mismatch detected, node count is zero"
-                 "\nNode count should be %s" % node_count + \
-                 "\nNode count returned from cluster is %s" % node_count_compare + \
-                 "\nScript has exited, build does not appear complete")
+                 "\nNode count should be {}"
+                 "\nNode count returned from cluster is {}"
+                 "\nScript has exited, build "
+                 "does not appear complete").format(node_count, node_count_compare)
 
     else:
         drive_add()
